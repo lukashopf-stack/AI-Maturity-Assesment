@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>AI Readiness Assessment · ARCMM</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -586,14 +587,15 @@ footer{
 let lang = 'en';
 let userRole = null;
 let currentUserId = null;
+let supabase = null;
 
 const ADMIN_USER = 'AnjaLukas';
 const ADMIN_PASS = 'Copenhagen1!';
 const GUEST_USER = 'guest';
 const GUEST_PASS = 'guest123';
 
-const API_URL = 'https://api.github.com/repos/lukashopf-stack/AI-Maturity-Assessment/contents/data.json';
-const TOKEN = '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';
+const SUPABASE_URL = 'https://lrilgfxclkqgazqgcslc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyaWxnZnhjbGtxZ2F6cWdjc2xjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyNzE0MTIsImV4cCI6MjA2Mzg0NzQxMn0.sb_publishable_MNi9l3SkjPvU-m67sxqTrQ_VfZQYT6j';
 
 const T = {
   respondents: { de:'Befragte', en:'Respondents' },
@@ -653,42 +655,51 @@ const QS = [
 let state = { profiles:[] };
 let activeProfileId = null;
 
+function initSupabase() {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
 async function loadData() {
   try {
-    const response = await fetch(API_URL, {
-      headers: { 'Authorization': `token ${TOKEN}` }
-    });
-    if (response.ok) {
-      const data = await response.json();
-      const content = atob(data.content);
-      state = JSON.parse(content);
-    }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    state.profiles = data || [];
   } catch(e) {
     console.error('Load error:', e);
   }
 }
 
-async function saveData() {
+async function saveProfile(profile) {
   try {
-    const currentFile = await fetch(API_URL, {
-      headers: { 'Authorization': `token ${TOKEN}` }
-    });
-    const currentData = await currentFile.json();
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(profile)
+      .select();
     
-    await fetch(API_URL, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message: 'Update survey data',
-        content: btoa(JSON.stringify(state)),
-        sha: currentData.sha
-      })
-    });
+    if (error) throw error;
+    
+    return data[0];
   } catch(e) {
     console.error('Save error:', e);
+    return null;
+  }
+}
+
+async function deleteAllProfiles() {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .neq('id', '');
+    
+    if (error) throw error;
+  } catch(e) {
+    console.error('Delete error:', e);
   }
 }
 
@@ -702,6 +713,8 @@ function handleLogin() {
     error.classList.remove('show');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-root').classList.remove('hidden');
+    
+    initSupabase();
     loadData().then(renderHome);
   } else {
     error.classList.add('show');
@@ -768,11 +781,22 @@ function startGuestSurvey() {
   }
   
   const id = 'p' + Date.now();
-  const profile = { id, name, role, responses: {}, userId: GUEST_USER };
-  state.profiles.push(profile);
-  currentUserId = id;
+  const profile = { 
+    id, 
+    name, 
+    role, 
+    responses: {}, 
+    user_id: GUEST_USER, 
+    created_at: new Date().toISOString() 
+  };
   
-  saveData().then(() => openSurvey(id));
+  saveProfile(profile).then(savedProfile => {
+    if (savedProfile) {
+      state.profiles.unshift(savedProfile);
+      currentUserId = id;
+      openSurvey(id);
+    }
+  });
 }
 
 function openSurvey(pid) {
@@ -781,7 +805,7 @@ function openSurvey(pid) {
   
   if (!p) return;
   
-  if (userRole === 'guest' && p.userId !== GUEST_USER && currentUserId !== pid) {
+  if (userRole === 'guest' && p.user_id !== GUEST_USER && currentUserId !== pid) {
     alert('Access denied');
     return;
   }
@@ -808,7 +832,7 @@ function renderSurvey(p) {
     
     QS.filter(q => q.c === cap.id).forEach(q => {
       const ln = LENS.find(lens => lens.id === q.l);
-      const cur = p.responses[q.id] || null;
+      const cur = p.responses ? p.responses[q.id] : null;
       const opts = q.opts[lang];
       
       const qDiv = document.createElement('div');
@@ -868,6 +892,7 @@ function pick(qid, val) {
   const p = state.profiles.find(p => p.id === activeProfileId);
   if (!p) return;
   
+  if (!p.responses) p.responses = {};
   p.responses[qid] = val;
   
   const optsDiv = document.getElementById('opts_' + qid);
@@ -892,9 +917,12 @@ function updateProgress(p) {
 }
 
 function completeSurvey() {
-  saveData().then(() => {
-    goHome();
-  });
+  const p = state.profiles.find(p => p.id === activeProfileId);
+  if (p) {
+    saveProfile(p).then(() => {
+      goHome();
+    });
+  }
 }
 
 function showScreen(id) {
@@ -903,12 +931,11 @@ function showScreen(id) {
 }
 
 function goHome() {
-  renderHome();
+  loadData().then(renderHome);
   showScreen('home');
 }
 
 function showResults() {
-  // Results implementation would go here
   alert('Results view coming soon');
 }
 
@@ -922,8 +949,11 @@ function exportData() {
 
 function resetAll() {
   if (!confirm(lang === 'en' ? 'Reset all data?' : 'Alle Daten zurücksetzen?')) return;
-  state = { profiles: [] };
-  saveData().then(renderHome);
+  
+  deleteAllProfiles().then(() => {
+    state = { profiles: [] };
+    renderHome();
+  });
 }
 
 document.getElementById('login-user').addEventListener('keydown', e => {
