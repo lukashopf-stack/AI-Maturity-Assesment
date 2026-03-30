@@ -1,1 +1,719 @@
 # AI-Maturity-Assesment
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Readiness Assessment · ARCMM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary: #f0efea;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666660;
+    --text-tertiary: #999994;
+    --border-light: rgba(0,0,0,0.10);
+    --border-mid: rgba(0,0,0,0.18);
+    --border-strong: rgba(0,0,0,0.28);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --font: 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2c2c2a;
+      --text-primary: #f0efe8;
+      --text-secondary: #a09e97;
+      --text-tertiary: #666660;
+      --border-light: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+      --border-strong: rgba(255,255,255,0.22);
+    }
+  }
+
+  html, body { height: 100%; background: var(--bg-tertiary); color: var(--text-primary); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+
+  .app { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Header */
+  .page-header { margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 0.5px solid var(--border-light); }
+  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .page-header p { font-size: 13px; color: var(--color-text-secondary, var(--text-secondary)); margin-top: 4px; }
+
+  .intro-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 1.5rem; max-width: 680px; }
+
+  /* Profiles grid */
+  .profiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .profile-card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+  .profile-card:hover { border-color: var(--border-mid); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .profile-card.completed { border-color: #1D9E75; }
+  .profile-card.add-new { border-style: dashed; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-tertiary); font-size: 14px; min-height: 100px; }
+  .profile-card.add-new:hover { color: var(--text-secondary); border-color: var(--border-mid); }
+  .profile-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .profile-role { font-size: 12px; color: var(--text-secondary); margin-top: 1px; margin-bottom: 10px; }
+  .status-badge { font-size: 11px; padding: 2px 9px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px; }
+  .status-done { background: #E1F5EE; color: #0F6E56; }
+  .status-partial { background: #FAEEDA; color: #854F0B; }
+  .status-empty { background: var(--bg-secondary); color: var(--text-tertiary); }
+
+  .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-md); border: 0.5px solid var(--border-mid); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-primary); font-family: var(--font); transition: background 0.12s; }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn-primary { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .btn-primary:hover { opacity: 0.88; background: var(--text-primary); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-danger { color: #A32D2D; border-color: #E24B4A; }
+  .btn-danger:hover { background: #FCEBEB; }
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
+  .modal { background: var(--bg-primary); border-radius: var(--radius-xl); padding: 1.75rem; max-width: 420px; width: 100%; border: 0.5px solid var(--border-light); }
+  .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-group input { width: 100%; padding: 9px 12px; border-radius: var(--radius-md); border: 0.5px solid var(--border-mid); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-family: var(--font); outline: none; }
+  .form-group input:focus { border-color: var(--border-strong); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; }
+
+  /* Survey */
+  .survey-topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+  .survey-who { font-size: 14px; font-weight: 500; }
+  .progress-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 1.75rem; }
+  .progress-bar { flex: 1; height: 3px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.3s; }
+  .progress-label { font-size: 12px; color: var(--text-tertiary); min-width: 50px; text-align: right; }
+
+  .cap-section { margin-bottom: 2.5rem; }
+  .cap-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; padding: 9px 14px; background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: 1rem; }
+  .cap-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .q-block { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+  .lens-tag { display: inline-flex; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-bottom: 8px; letter-spacing: 0.2px; text-transform: uppercase; }
+  .q-text { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; line-height: 1.4; }
+  .q-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6; }
+  .opts-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opt { padding: 5px 13px; border-radius: var(--radius-md); border: 0.5px solid var(--border-light); background: var(--bg-secondary); font-size: 12px; cursor: pointer; color: var(--text-secondary); font-family: var(--font); transition: all 0.12s; white-space: nowrap; }
+  .opt:hover { border-color: var(--border-mid); color: var(--text-primary); }
+  .opt.selected { background: var(--text-primary); color: var(--bg-primary); border-color: transparent; }
+  .opt.unable.selected { background: var(--bg-tertiary); color: var(--text-tertiary); border-color: var(--border-light); }
+
+  .reflections-section { margin-top: 0.5rem; }
+  .r-block { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+  .r-label { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+  .r-block textarea { width: 100%; min-height: 80px; padding: 9px 12px; font-size: 13px; font-family: var(--font); border: 0.5px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); resize: vertical; outline: none; }
+  .r-block textarea:focus { border-color: var(--border-mid); }
+  .rating-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .rating-row input[type=range] { flex: 1; accent-color: var(--text-primary); }
+  .rating-val { font-size: 18px; font-weight: 600; min-width: 24px; }
+
+  .survey-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 0.5px solid var(--border-light); }
+  .footer-note { font-size: 13px; color: var(--text-tertiary); }
+
+  /* Results */
+  .tab-bar { display: flex; gap: 4px; background: var(--bg-secondary); padding: 4px; border-radius: var(--radius-md); margin-bottom: 1.5rem; overflow-x: auto; }
+  .tab { padding: 7px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); font-family: var(--font); white-space: nowrap; transition: all 0.12s; }
+  .tab.active { background: var(--bg-primary); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .metric-card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem 1.1rem; }
+  .metric-cap-name { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+  .metric-score { font-size: 26px; font-weight: 600; }
+  .metric-denom { font-size: 13px; color: var(--text-tertiary); }
+
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media (max-width: 600px) { .chart-grid { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .chart-title { font-size: 13px; font-weight: 500; margin-bottom: 0.75rem; }
+  .chart-wrap { position: relative; height: 260px; }
+
+  .score-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.5rem; }
+  .score-table th { text-align: left; padding: 7px 10px; color: var(--text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 0.5px solid var(--border-light); }
+  .score-table td { padding: 9px 10px; border-bottom: 0.5px solid var(--border-light); color: var(--text-primary); }
+  .score-table tr:last-child td { border-bottom: none; }
+  .score-mini-bar { height: 5px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; width: 80px; }
+  .score-mini-fill { height: 100%; border-radius: 3px; }
+
+  .locked-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-xl); }
+  .locked-icon { font-size: 32px; margin-bottom: 1rem; opacity: 0.35; }
+  .locked-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .locked-box p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; max-width: 340px; }
+
+  .comp-section { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+  .comp-cap-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; }
+  .comp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .comp-name { font-size: 12px; color: var(--text-secondary); min-width: 130px; }
+  .comp-bar-wrap { flex: 1; height: 5px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; }
+  .comp-bar-fill { height: 100%; border-radius: 3px; }
+  .comp-val { font-size: 12px; min-width: 28px; text-align: right; }
+
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; margin-top: 1.5rem; }
+
+  footer { text-align: center; padding: 2rem; font-size: 12px; color: var(--text-tertiary); border-top: 0.5px solid var(--border-light); margin-top: 3rem; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen active">
+    <div class="page-header">
+      <h1>AI Readiness Assessment</h1>
+      <p>Organizational AI Readiness Capability Maturity Model (ARCMM) · March 2026</p>
+    </div>
+    <p class="intro-text">This survey assesses your organization's AI readiness across five capability areas, each viewed through three lenses: individual actors, digital technologies, and interactional patterns. Add up to 6 respondent profiles. The aggregate radar becomes visible once all profiles have completed the survey.</p>
+    <div class="profiles-grid" id="profiles-grid"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="showResults()">View results</button>
+      <button class="btn" onclick="exportData()">Export JSON</button>
+      <button class="btn" onclick="resetAll()" style="color:var(--text-tertiary)">Reset all</button>
+    </div>
+  </div>
+
+  <!-- SURVEY -->
+  <div id="screen-survey" class="screen">
+    <div class="survey-topbar">
+      <button class="btn btn-sm" onclick="goHome()">← Back</button>
+      <span class="survey-who" id="survey-who"></span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <span class="progress-label" id="prog-label">0 / 25</span>
+    </div>
+    <div id="survey-body"></div>
+    <div class="survey-footer">
+      <span class="footer-note" id="footer-note"></span>
+      <button class="btn btn-primary" onclick="completeSurvey()">Save responses</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+      <button class="btn btn-sm" onclick="goHome()">← Back</button>
+      <span style="font-size:17px;font-weight:600;">Results</span>
+    </div>
+    <div class="tab-bar" id="results-tabs"></div>
+    <div id="results-body"></div>
+  </div>
+
+</div>
+
+<!-- Add profile modal -->
+<div id="modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>Add respondent</h2>
+    <div class="form-group">
+      <label>Full name</label>
+      <input type="text" id="inp-name" placeholder="e.g. Anna Müller" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Role / title</label>
+      <input type="text" id="inp-role" placeholder="e.g. Head of Data & AI" autocomplete="off" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createProfile()">Start survey →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data model ────────────────────────────────────────────────────────────────
+
+const CAP = [
+  { id:'c1', name:'AI Strategy & Portfolio Management',    short:'Strategy & Portfolio',     color:'#378ADD', bg:'#E6F1FB' },
+  { id:'c2', name:'AI Delivery & Technical Architecture',  short:'Delivery & Architecture',  color:'#1D9E75', bg:'#E1F5EE' },
+  { id:'c3', name:'AI Data Accessibility & Management',    short:'Data Accessibility',        color:'#E24B4A', bg:'#FCEBEB' },
+  { id:'c4', name:'AI Coordination & Governance',          short:'Coordination & Governance', color:'#D4537E', bg:'#FBEAF0' },
+  { id:'c5', name:'AI Ethics & Risks',                     short:'Ethics & Risks',            color:'#BA7517', bg:'#FAEEDA' },
+];
+
+const LENS = [
+  { id:'ia', name:'Individual Actors',     color:'#534AB7', bg:'#EEEDFE' },
+  { id:'dt', name:'Digital Technologies',  color:'#185FA5', bg:'#E6F1FB' },
+  { id:'ip', name:'Interactional Patterns',color:'#0F6E56', bg:'#E1F5EE' },
+];
+
+const QS = [
+  { id:'q01', c:'c1', l:'ia', text:'To what extent do individual actors understand AI opportunities?',
+    desc:'The ability to understand the current capabilities and limitations of AI technology and recognize which business problems are suitable for AI solutions.',
+    opts:['Little','Basic','Solid','Advanced','Mature'] },
+  { id:'q02', c:'c1', l:'ia', text:'To what extent do individual actors contribute to prioritization?',
+    desc:'The extent to which relevant actors actively provide input for evaluating and ranking AI initiatives.',
+    opts:['Limited','Occasional','Regular','Consistent','Proactive'] },
+  { id:'q03', c:'c1', l:'ip', text:'To what extent are portfolio decision routines established?',
+    desc:'The organizational procedures and governance processes through which AI initiatives are approved, rejected, paused, scaled, or discontinued.',
+    opts:['Absent','Ad hoc','Formalized','Structured','Continuous'] },
+  { id:'q04', c:'c1', l:'ip', text:'To what extent is the AI portfolio linked to strategic goals?',
+    desc:'The degree to which the selection, steering, and continuation of AI initiatives are aligned with the organization\'s overarching strategic objectives and priorities.',
+    opts:['Absent','Implicit','Partial','Consistent','Seamless'] },
+  { id:'q05', c:'c2', l:'ia', text:'To what extent do technical roles have AI solution-building skills?',
+    desc:'The technical competencies required to develop AI models, including data preparation, algorithm/model selection, use-case development, testing, and validation.',
+    opts:['Absent','Emerging','Present','Consistent','Value-delivering'] },
+  { id:'q06', c:'c2', l:'ia', text:'To what extent do technical roles have operationalization skills?',
+    desc:'The technical competencies required to transition AI use-cases from development into production use, including deployment and integration.',
+    opts:['Absent','Emerging','Present','Consistent','Value-delivering'] },
+  { id:'q07', c:'c2', l:'dt', text:'To what extent are version control & deployment pipelines established?',
+    desc:'The technical systems and processes for managing code versions, tracking changes, and automating the deployment of AI models into production environments.',
+    opts:['Absent','Basic','Functional','Standardized','Automated'] },
+  { id:'q08', c:'c2', l:'dt', text:'To what extent are solution monitoring tools established?',
+    desc:'The technical systems and processes for tracking AI model performance, detecting issues such as model drift, and ensuring continuous reliability in production.',
+    opts:['Absent','Informal','Functional','Standardized','Automated'] },
+  { id:'q09', c:'c2', l:'ip', text:'To what extent are AI delivery practices established?',
+    desc:'The standardized organizational processes and workflows for moving AI solutions through development, testing, deployment, and maintenance stages.',
+    opts:['Absent','Basic','Structured','Standardized','Continuously improved'] },
+  { id:'q10', c:'c2', l:'ip', text:'To what extent are IT & business functions coordinated in AI delivery?',
+    desc:'The collaboration and alignment between IT teams and business throughout the AI delivery lifecycle, from requirements gathering to deployment and maintenance.',
+    opts:['Absent','Reactive','Consistent','Embedded','Proactive'] },
+  { id:'q11', c:'c4', l:'ia', text:'To what extent are roles & responsibilities for AI projects clear to individual actors?',
+    desc:'The extent to which it is clearly defined who is accountable for AI-related tasks, including strategic oversight, project delivery, data governance, and operational responsibilities.',
+    opts:['Absent','Basic','Established','Consistent','Embedded'] },
+  { id:'q12', c:'c4', l:'ia', text:'To what extent are decision rights for AI clear to individual actors?',
+    desc:'The extent to which it is clearly defined who has the authority to make decisions about AI initiatives, including approvals, resource allocation, prioritization, and project continuation or termination.',
+    opts:['Absent','Basic','Established','Consistent','Embedded'] },
+  { id:'q13', c:'c4', l:'ip', text:'To what extent are decision rights & processes for AI established?',
+    desc:'The governance structures and approval mechanisms through which AI-project decisions are made, escalated, and documented across the organization.',
+    opts:['Absent','Informal','Defined','Consistently applied','Continuously improved'] },
+  { id:'q14', c:'c4', l:'ip', text:'To what extent are relevant stakeholders involved in AI-related decisions and activities?',
+    desc:'The extent to which relevant organizational actors, including business units, IT, data teams, compliance, and end users, are engaged throughout AI project lifecycles.',
+    opts:['Absent','Basic','Structured','Consistent','Continuous'] },
+  { id:'q15', c:'c3', l:'ia', text:'To what extent are business roles aware of data requirements and opportunities for AI?',
+    desc:'The extent to which business roles understand data requirements for AI and actively participate in data collection and improvement.',
+    opts:['Absent','Basic','Established','Proactive','Advocacy-driven'] },
+  { id:'q16', c:'c3', l:'ia', text:'To what extent do technical roles support and govern data practices for AI?',
+    desc:'The competencies and routines of technical teams to collect, structure, integrate, curate, and maintain data to meet AI quality and accessibility standards.',
+    opts:['Reactive','Supportive','Standards-enforcing','Governance-leading','Continuously refining'] },
+  { id:'q17', c:'c3', l:'dt', text:'To what extent is the data infrastructure structured and scalable for AI use?',
+    desc:'The technical systems and platforms for storing, processing, and providing access to data required for AI model development, deployment, and operation.',
+    opts:['Limited','Basic','Structured','Scalable','Elastic'] },
+  { id:'q18', c:'c3', l:'dt', text:'To what extent is data accessible across systems and stakeholders for AI use?',
+    desc:'The extent to which relevant data can be discovered, retrieved, and used by authorized teams and stakeholders across the organization for AI purposes.',
+    opts:['Limited','Siloed','Partial','Consistent','Interoperable'] },
+  { id:'q19', c:'c3', l:'ip', text:'To what extent are data access & editing rights defined for data?',
+    desc:'The formal policies and permissions that define who can access, use, and share specific data assets for AI development and deployment.',
+    opts:['Undefined','Informal','Defined','Enforced','Continuously refined'] },
+  { id:'q20', c:'c3', l:'ip', text:'To what extent are data quality processes established to ensure reliable data for AI use?',
+    desc:'The organizational routines and standards for ensuring data accuracy, completeness, consistency, and reliability across the AI lifecycle.',
+    opts:['Absent','Inconsistent','Basic','Reliability-driven','Continuously improved'] },
+  { id:'q21', c:'c5', l:'ia', text:'To what extent are business roles aware of and responsible for AI-related risks & ethical concerns?',
+    desc:'The extent to which business stakeholders understand ethical, legal, security, privacy, and quality risks associated with AI and take responsibility for identifying and escalating them.',
+    opts:['Absent','Basic','Established','Consistent','Proactive'] },
+  { id:'q22', c:'c5', l:'ia', text:'To what extent do technical roles identify, assess, and address AI-related risks & ethical concerns in practice?',
+    desc:'The competencies and routines of technical teams to identify, assess, document, and mitigate ethical, legal, security, privacy, and quality risks throughout the AI lifecycle.',
+    opts:['Absent','Emerging','Defined','Enforced','Continuously refined'] },
+  { id:'q23', c:'c5', l:'dt', text:'To what extent is AI ethics & risk assessment tooling established?',
+    desc:'The technical systems and methods for systematically evaluating AI-related risks, including model testing, bias detection, security scanning, and compliance checking.',
+    opts:['Absent','Basic','Standard','Systematic','Automated'] },
+  { id:'q24', c:'c5', l:'ip', text:'To what extent are AI ethics & risk review routines established?',
+    desc:'The organizational processes for regularly reviewing AI systems and projects to identify emerging risks and assess whether mitigation measures remain effective.',
+    opts:['Absent','Scattered','Defined','Consistent','Recurring'] },
+  { id:'q25', c:'c5', l:'ip', text:'To what extent are escalation paths for AI-related risks and ethical issues established?',
+    desc:'The procedures and reporting structures through which identified AI risks are communicated to appropriate decision-makers for resolution or mitigation action.',
+    opts:['Absent','Inconsistent','Defined','Enforced','Embedded'] },
+];
+
+const OQS = [
+  { id:'oq1', text:'Are there any important aspects of AI readiness that you believe are missing from this assessment?', type:'text' },
+  { id:'oq2', text:'On a scale from 1 to 5, how able do you think your organization is to implement AI successfully?', type:'rating' },
+  { id:'oq3', text:'After completing this survey, did your view of your organization\'s ability to implement AI successfully differ from your initial perception?', type:'select', opts:['No, it was about the same','Yes, somewhat','Yes, significantly','Not sure'] },
+  { id:'oq4', text:'How did your perception change?', type:'text' },
+];
+
+const AVATAR_PALETTES = [
+  { bg:'#E6F1FB', fg:'#185FA5' }, { bg:'#E1F5EE', fg:'#0F6E56' }, { bg:'#FBEAF0', fg:'#993556' },
+  { bg:'#FAEEDA', fg:'#854F0B' }, { bg:'#EEEDFE', fg:'#534AB7' }, { bg:'#FCEBEB', fg:'#A32D2D' },
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────────
+
+let state = { profiles:[] };
+let activeProfileId = null;
+let currentTab = 'aggregate';
+const charts = {};
+
+function save() { try { localStorage.setItem('arcmm_v2', JSON.stringify(state)); } catch(e){} }
+function load() { try { const s = localStorage.getItem('arcmm_v2'); if(s) state = JSON.parse(s); } catch(e){} }
+
+// ─── Utilities ──────────────────────────────────────────────────────────────────
+
+function ini(n) { return (n||'?').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function pal(i) { return AVATAR_PALETTES[i % AVATAR_PALETTES.length]; }
+function score(r, qid) {
+  const v = r[qid]; if (!v || v==='unable') return null;
+  const q = QS.find(q=>q.id===qid); if(!q) return null;
+  const i = q.opts.indexOf(v); return i<0 ? null : i+1;
+}
+function capLensScore(r, cid, lid) {
+  const qs = QS.filter(q=>q.c===cid && q.l===lid);
+  const ss = qs.map(q=>score(r,q.id)).filter(s=>s!==null);
+  return ss.length ? ss.reduce((a,b)=>a+b,0)/ss.length : null;
+}
+function capScore(r, cid) {
+  const ss = QS.filter(q=>q.c===cid).map(q=>score(r,q.id)).filter(s=>s!==null);
+  return ss.length ? ss.reduce((a,b)=>a+b,0)/ss.length : null;
+}
+function answered(p) { return QS.filter(q=>p.responses&&p.responses[q.id]).length; }
+function isComplete(p) { return QS.every(q=>p.responses&&p.responses[q.id]); }
+function allDone() { return state.profiles.length>0 && state.profiles.every(isComplete); }
+
+// ─── Navigation ─────────────────────────────────────────────────────────────────
+
+function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+id).classList.add('active'); }
+function goHome() { renderHome(); show('home'); }
+function showResults() { currentTab='aggregate'; renderResults(); show('results'); }
+function openModal() { document.getElementById('modal').style.display='flex'; setTimeout(()=>document.getElementById('inp-name').focus(),50); }
+function closeModal() { document.getElementById('modal').style.display='none'; document.getElementById('inp-name').value=''; document.getElementById('inp-role').value=''; }
+
+// ─── Home ───────────────────────────────────────────────────────────────────────
+
+function renderHome() {
+  const g = document.getElementById('profiles-grid');
+  g.innerHTML = '';
+  state.profiles.forEach((p,i) => {
+    const done = isComplete(p); const cnt = answered(p); const pl = pal(i);
+    const c = document.createElement('div');
+    c.className = 'profile-card'+(done?' completed':'');
+    c.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};">${ini(p.name)}</div>
+        <div><div class="profile-name">${p.name}</div><div class="profile-role">${p.role||'No role specified'}</div></div>
+      </div>
+      <span class="status-badge ${done?'status-done':cnt>0?'status-partial':'status-empty'}">
+        ${done?'✓ Complete':cnt>0?cnt+'/25 answered':'Not started'}
+      </span>`;
+    c.onclick = () => openSurvey(p.id);
+    g.appendChild(c);
+  });
+  if (state.profiles.length < 6) {
+    const a = document.createElement('div');
+    a.className = 'profile-card add-new';
+    a.innerHTML = '<span style="font-size:22px;line-height:1;font-weight:300;">+</span> Add respondent';
+    a.onclick = openModal;
+    g.appendChild(a);
+  }
+}
+
+function createProfile() {
+  const name = document.getElementById('inp-name').value.trim();
+  const role = document.getElementById('inp-role').value.trim();
+  if (!name) { document.getElementById('inp-name').focus(); return; }
+  const id = 'p'+Date.now();
+  state.profiles.push({ id, name, role, responses:{}, open:{} });
+  save(); closeModal();
+  openSurvey(id);
+}
+
+// ─── Survey ──────────────────────────────────────────────────────────────────────
+
+function openSurvey(id) {
+  activeProfileId = id;
+  const p = state.profiles.find(p=>p.id===id);
+  document.getElementById('survey-who').textContent = p.name + (p.role ? ' · '+p.role : '');
+  renderSurvey(p);
+  show('survey');
+}
+
+function renderSurvey(p) {
+  const body = document.getElementById('survey-body');
+  body.innerHTML = '';
+  CAP.forEach(cap => {
+    const sec = document.createElement('div');
+    sec.className = 'cap-section';
+    sec.innerHTML = `<div class="cap-header"><div class="cap-dot" style="background:${cap.color}"></div>${cap.name}</div>`;
+    QS.filter(q=>q.c===cap.id).forEach(q => {
+      const ln = LENS.find(l=>l.id===q.l);
+      const cur = p.responses[q.id]||null;
+      const div = document.createElement('div');
+      div.className = 'q-block'; div.id = 'qb_'+q.id;
+      let optsHtml = q.opts.map(o=>`<button class="opt${cur===o?' selected':''}" onclick="pick('${q.id}','${o.replace(/'/g,"\\'")}',this)" data-val="${o}">${o}</button>`).join('');
+      optsHtml += `<button class="opt unable${cur==='unable'?' selected':''}" onclick="pick('${q.id}','unable',this)" data-val="unable">Unable to answer</button>`;
+      div.innerHTML = `
+        <span class="lens-tag" style="background:${ln.bg};color:${ln.color};">${ln.name}</span>
+        <div class="q-text">${q.text}</div>
+        <div class="q-desc">${q.desc}</div>
+        <div class="opts-row" id="or_${q.id}">${optsHtml}</div>`;
+      sec.appendChild(div);
+    });
+    body.appendChild(sec);
+  });
+
+  // Reflections
+  const rs = document.createElement('div');
+  rs.innerHTML = `<div class="cap-header" style="background:var(--bg-secondary);">Reflections</div>`;
+  OQS.forEach(oq => {
+    const div = document.createElement('div');
+    div.className = 'r-block';
+    const cur = p.open[oq.id]||'';
+    if (oq.type==='rating') {
+      div.innerHTML = `<div class="r-label">${oq.text}</div>
+        <div class="rating-row">
+          <span style="font-size:12px;color:var(--text-tertiary);">1</span>
+          <input type="range" min="1" max="5" step="1" value="${cur||3}" id="rng_${oq.id}" oninput="saveOpen('${oq.id}',this.value);document.getElementById('rv_${oq.id}').textContent=this.value;">
+          <span style="font-size:12px;color:var(--text-tertiary);">5</span>
+          <span class="rating-val" id="rv_${oq.id}">${cur||3}</span>
+        </div>`;
+    } else if (oq.type==='select') {
+      const oph = oq.opts.map(o=>`<button class="opt${cur===o?' selected':''}" onclick="selectOpen('${oq.id}','${o.replace(/'/g,"\\'")}',this)">${o}</button>`).join('');
+      div.innerHTML = `<div class="r-label">${oq.text}</div><div class="opts-row" style="margin-top:8px;" id="oo_${oq.id}">${oph}</div>`;
+    } else {
+      div.innerHTML = `<div class="r-label">${oq.text}</div><textarea placeholder="Your response..." oninput="saveOpen('${oq.id}',this.value)">${cur}</textarea>`;
+    }
+    rs.appendChild(div);
+  });
+  body.appendChild(rs);
+  updateProg(p);
+}
+
+function pick(qid, val, btn) {
+  const p = state.profiles.find(p=>p.id===activeProfileId); if(!p) return;
+  p.responses[qid] = val; save();
+  const row = document.getElementById('or_'+qid);
+  if (row) row.querySelectorAll('.opt').forEach(b => {
+    b.classList.remove('selected');
+    if (b.dataset.val === val) b.classList.add('selected');
+  });
+  updateProg(p);
+}
+
+function selectOpen(oqid, val, btn) {
+  const p = state.profiles.find(p=>p.id===activeProfileId); if(!p) return;
+  p.open[oqid] = val; save();
+  const row = document.getElementById('oo_'+oqid);
+  if (row) row.querySelectorAll('.opt').forEach(b => { b.classList.remove('selected'); if(b===btn) b.classList.add('selected'); });
+}
+
+function saveOpen(oqid, val) {
+  const p = state.profiles.find(p=>p.id===activeProfileId); if(!p) return;
+  p.open[oqid] = val; save();
+}
+
+function updateProg(p) {
+  const cnt = answered(p); const total = QS.length;
+  document.getElementById('prog-fill').style.width = Math.round(cnt/total*100)+'%';
+  document.getElementById('prog-label').textContent = cnt+' / '+total;
+  document.getElementById('footer-note').textContent = cnt===total ? 'All questions answered.' : (total-cnt)+' questions remaining';
+}
+
+function completeSurvey() { save(); goHome(); }
+
+// ─── Results ─────────────────────────────────────────────────────────────────────
+
+function renderResults() {
+  // Tabs
+  const tb = document.getElementById('results-tabs');
+  tb.innerHTML = '';
+  [{ id:'aggregate', label:'Aggregate' }, ...state.profiles.map(p=>({ id:p.id, label:p.name }))].forEach(v => {
+    const t = document.createElement('button');
+    t.className = 'tab'+(currentTab===v.id?' active':'');
+    t.textContent = v.label;
+    t.onclick = () => { currentTab=v.id; renderResults(); };
+    tb.appendChild(t);
+  });
+  const body = document.getElementById('results-body');
+  body.innerHTML = '';
+  if (currentTab==='aggregate') renderAggregate(body);
+  else { const p = state.profiles.find(p=>p.id===currentTab); if(p) renderProfile(body, p); }
+}
+
+function renderAggregate(body) {
+  if (!allDone()) {
+    const done = state.profiles.filter(isComplete).length;
+    body.innerHTML = `
+      <div class="locked-box">
+        <div class="locked-icon">🔒</div>
+        <h3>Aggregate results locked</h3>
+        <p>The aggregate radar and scores become visible once every respondent has completed the survey.<br><br>
+        ${done} of ${state.profiles.length} profile${state.profiles.length!==1?'s':''} complete.${state.profiles.length===0?'<br>Add respondents on the home screen.':''}</p>
+      </div>`;
+    return;
+  }
+
+  const capData = CAP.map(cap => {
+    const ls = {}; LENS.forEach(l => {
+      const vals = state.profiles.map(p=>capLensScore(p.responses,cap.id,l.id)).filter(s=>s!==null);
+      ls[l.id] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    });
+    const ov = state.profiles.map(p=>capScore(p.responses,cap.id)).filter(s=>s!==null);
+    return { cap, ls, overall: ov.length ? ov.reduce((a,b)=>a+b,0)/ov.length : 0 };
+  });
+
+  // Metric cards
+  const mg = document.createElement('div'); mg.className = 'metric-grid';
+  capData.forEach(d => {
+    mg.innerHTML += `<div class="metric-card">
+      <div class="metric-cap-name">${d.cap.short}</div>
+      <div class="metric-score" style="color:${d.cap.color};">${d.overall.toFixed(1)}<span class="metric-denom">/5</span></div>
+    </div>`;
+  });
+  body.appendChild(mg);
+
+  // Chart grid
+  const cg = document.createElement('div'); cg.className = 'chart-grid';
+  cg.innerHTML = `
+    <div class="chart-card"><div class="chart-title">Overall capability scores</div><div class="chart-wrap"><canvas id="ra-cap"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Scores by lens</div><div class="chart-wrap"><canvas id="ra-lens"></canvas></div></div>`;
+  body.appendChild(cg);
+
+  // Table
+  const st = document.createElement('div');
+  st.innerHTML = `<p class="section-title">Breakdown by capability and lens</p>
+    <table class="score-table">
+      <thead><tr><th>Capability</th><th>Individual Actors</th><th>Digital Technologies</th><th>Interactional Patterns</th><th>Overall</th></tr></thead>
+      <tbody>${capData.map(d=>`<tr>
+        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.cap.color};margin-right:6px;vertical-align:middle;"></span>${d.cap.short}</td>
+        ${LENS.map(l=>`<td><div style="display:flex;align-items:center;gap:8px;">${d.ls[l.id]?d.ls[l.id].toFixed(1):'—'}<div class="score-mini-bar"><div class="score-mini-fill" style="width:${((d.ls[l.id]||0)/5*100).toFixed(0)}%;background:${l.color};"></div></div></div></td>`).join('')}
+        <td style="font-weight:600;">${d.overall.toFixed(1)}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  body.appendChild(st);
+
+  // Respondent comparison
+  const rc = document.createElement('div');
+  rc.innerHTML = `<p class="section-title">Respondent comparison by capability</p>`;
+  CAP.forEach(cap => {
+    const sec = document.createElement('div'); sec.className = 'comp-section';
+    let rows = `<div class="comp-cap-title">${cap.name}</div>`;
+    state.profiles.forEach((p,i) => {
+      const sc = capScore(p.responses, cap.id); const pl = pal(i);
+      rows += `<div class="comp-row">
+        <div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};width:24px;height:24px;font-size:9px;flex-shrink:0;">${ini(p.name)}</div>
+        <div class="comp-name">${p.name}</div>
+        <div class="comp-bar-wrap"><div class="comp-bar-fill" style="width:${sc?(sc/5*100).toFixed(0):0}%;background:${cap.color};"></div></div>
+        <div class="comp-val">${sc?sc.toFixed(1):'—'}</div>
+      </div>`;
+    });
+    sec.innerHTML = rows; rc.appendChild(sec);
+  });
+  body.appendChild(rc);
+
+  // Draw charts
+  setTimeout(() => {
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const gc = dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)';
+    const tc = dark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+    const pc = dark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+    const radarOpts = (labels, data, color) => ({
+      type:'radar', data:{ labels, datasets:[{ data, backgroundColor:color+'28', borderColor:color, borderWidth:2, pointBackgroundColor:color, pointRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+        scales:{ r:{ min:0, max:5, ticks:{ stepSize:1, color:tc, font:{ size:9 } }, grid:{ color:gc }, angleLines:{ color:gc }, pointLabels:{ color:pc, font:{ size:9 } } } } }
+    });
+    if(charts['ra-cap']) charts['ra-cap'].destroy();
+    if(charts['ra-lens']) charts['ra-lens'].destroy();
+    charts['ra-cap'] = new Chart(document.getElementById('ra-cap'), radarOpts(CAP.map(c=>c.short), capData.map(d=>+d.overall.toFixed(2)), '#378ADD'));
+    const lensAgg = LENS.map(l => {
+      const vals = state.profiles.flatMap(p=>CAP.map(cap=>capLensScore(p.responses,cap.id,l.id)).filter(s=>s!==null));
+      return vals.length ? +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : 0;
+    });
+    charts['ra-lens'] = new Chart(document.getElementById('ra-lens'), radarOpts(LENS.map(l=>l.name), lensAgg, '#1D9E75'));
+  }, 80);
+}
+
+function renderProfile(body, p) {
+  const idx = state.profiles.findIndex(q=>q.id===p.id); const pl = pal(idx);
+  const capData = CAP.map(cap => {
+    const ls = {}; LENS.forEach(l => { ls[l.id] = capLensScore(p.responses, cap.id, l.id); });
+    return { cap, ls, overall: capScore(p.responses, cap.id) };
+  });
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.style = 'display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;';
+  hdr.innerHTML = `
+    <div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};width:44px;height:44px;">${ini(p.name)}</div>
+    <div><div style="font-size:16px;font-weight:600;">${p.name}</div><div style="font-size:13px;color:var(--text-secondary);">${p.role||'No role specified'}</div></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn btn-sm" onclick="openSurvey('${p.id}')">Edit responses</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${p.id}')">Remove</button>
+    </div>`;
+  body.appendChild(hdr);
+
+  // Metric cards
+  const mg = document.createElement('div'); mg.className = 'metric-grid';
+  capData.forEach(d => {
+    mg.innerHTML += `<div class="metric-card">
+      <div class="metric-cap-name">${d.cap.short}</div>
+      <div class="metric-score" style="color:${d.cap.color};">${d.overall!==null?d.overall.toFixed(1):'—'}<span class="metric-denom">/5</span></div>
+    </div>`;
+  });
+  body.appendChild(mg);
+
+  // Radar
+  const rc = document.createElement('div');
+  rc.className = 'chart-card';
+  rc.style = 'max-width:440px;margin:0 auto 1.5rem;';
+  rc.innerHTML = `<div class="chart-title">${p.name} — capability scores</div><div class="chart-wrap"><canvas id="ra-prof-${p.id}"></canvas></div>`;
+  body.appendChild(rc);
+
+  // Table
+  const st = document.createElement('div');
+  st.innerHTML = `<p class="section-title">Breakdown by capability and lens</p>
+    <table class="score-table">
+      <thead><tr><th>Capability</th><th>Individual Actors</th><th>Digital Technologies</th><th>Interactional Patterns</th><th>Overall</th></tr></thead>
+      <tbody>${capData.map(d=>`<tr>
+        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.cap.color};margin-right:6px;vertical-align:middle;"></span>${d.cap.short}</td>
+        ${LENS.map(l=>`<td>${d.ls[l.id]!==null?d.ls[l.id].toFixed(1):'—'}</td>`).join('')}
+        <td style="font-weight:600;">${d.overall!==null?d.overall.toFixed(1):'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  body.appendChild(st);
+
+  setTimeout(() => {
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const gc = dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)';
+    const tc = dark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+    const pc = dark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+    const key = 'ra-prof-'+p.id;
+    if(charts[key]) charts[key].destroy();
+    charts[key] = new Chart(document.getElementById(key), {
+      type:'radar',
+      data:{ labels:CAP.map(c=>c.short), datasets:[{
+        data: capData.map(d=>d.overall!==null?+d.overall.toFixed(2):0),
+        backgroundColor: pl.bg+'aa', borderColor: pl.fg, borderWidth:2, pointBackgroundColor:pl.fg, pointRadius:3
+      }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+        scales:{ r:{ min:0, max:5, ticks:{ stepSize:1, color:tc, font:{ size:9 } }, grid:{ color:gc }, angleLines:{ color:gc }, pointLabels:{ color:pc, font:{ size:9 } } } } }
+    });
+  }, 80);
+}
+
+function deleteProfile(id) {
+  if (!confirm('Remove this respondent and all their responses? This cannot be undone.')) return;
+  state.profiles = state.profiles.filter(p=>p.id!==id); save();
+  currentTab = 'aggregate'; renderResults();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'arcmm_responses_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+}
+
+function resetAll() {
+  if (!confirm('Reset all profiles and responses? This cannot be undone.')) return;
+  state = { profiles:[] }; save(); currentTab='aggregate';
+  Object.keys(charts).forEach(k=>{ try{charts[k].destroy();}catch(e){} delete charts[k]; });
+  goHome();
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────────
+load(); renderHome();
+</script>
+
+<footer>ARCMM · AI Readiness Capability Maturity Model · Copenhagen Business School · 2026</footer>
+</body>
+</html>
