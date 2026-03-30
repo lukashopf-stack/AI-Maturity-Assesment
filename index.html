@@ -654,9 +654,9 @@ function renderHome() {
     const isSelected = activeOrgId === org.id;
     card.className = 'org-card'+(isSelected?' selected':'');
     const completedCount = org.profiles.filter(isComplete).length;
-    card.innerHTML = <div class="org-name">${org.name}</div><div class="org-meta">${org.desc||''}</div>
+    card.innerHTML = `<div class="org-name">${org.name}</div><div class="org-meta">${org.desc||''}</div>
       <span class="badge ${allDone?'badge-done':completedCount>0?'badge-partial':'badge-empty'}">
-        ${allDone ? t('complete') : completedCount+' / '+org.profiles.length+' '+t('profilesComplete')}</span>;
+        ${allDone ? t('complete') : completedCount+' / '+org.profiles.length+' '+t('profilesComplete')}</span>`;
     card.onclick = () => selectOrg(org.id);
     og.appendChild(card);
   });
@@ -678,24 +678,24 @@ function selectOrg(orgId) { activeOrgId = activeOrgId === orgId ? null : orgId; 
 
 function renderOrgDetail(org) {
   const hdr = document.getElementById('org-detail-header');
-  hdr.innerHTML = <div class="org-section-header">
+  hdr.innerHTML = `<div class="org-section-header">
     <div class="org-section-icon">${ini(org.name)}</div>
-    <div><div class="org-section-name">${org.name}</div>${org.desc?<div style="font-size:11px;color:var(--blue-600)">${org.desc}</div>:''}</div>
+    <div><div class="org-section-name">${org.name}</div>${org.desc?`<div style="font-size:11px;color:var(--blue-600)">${org.desc}</div>`:''}</div>
     <span class="org-section-meta">${org.profiles.filter(isComplete).length} / ${org.profiles.length} ${lang==='de'?'vollständig':'complete'}</span>
     <button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="deleteOrg('${org.id}')">${lang==='de'?'Entfernen':'Remove'}</button>
-  </div>;
+  </div>`;
   const pg = document.getElementById('profiles-grid');
   pg.innerHTML = '';
   org.profiles.forEach((p,i) => {
     const done = isComplete(p); const cnt = answered(p); const pl = pal(i);
     const card = document.createElement('div');
     card.className = 'profile-card'+(done?' completed':'');
-    card.innerHTML = <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    card.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};">${ini(p.name)}</div>
         <div><div class="profile-name">${p.name}</div><div class="profile-role">${p.role||t('noRoleSpec')}</div></div>
       </div>
       <span class="badge ${done?'badge-done':cnt>0?'badge-partial':'badge-empty'}">
-        ${done ? t('complete') : cnt>0 ? cnt+'/25 '+(lang==='de'?'beantwortet':'answered') : t('notStarted')}</span>;
+        ${done ? t('complete') : cnt>0 ? cnt+'/25 '+(lang==='de'?'beantwortet':'answered') : t('notStarted')}</span>`;
     card.onclick = () => openSurvey(p.id);
     pg.appendChild(card);
   });
@@ -753,43 +753,43 @@ function renderSurvey(p) {
   CAP.forEach(cap => {
     const sec = document.createElement('div');
     sec.className = 'cap-section';
-    sec.innerHTML = <div class="cap-header"><div class="cap-dot" style="background:${cap.color}"></div>${l(cap.name)}</div>;
+    sec.innerHTML = `<div class="cap-header"><div class="cap-dot" style="background:${cap.color}"></div>${l(cap.name)}</div>`;
     QS.filter(q=>q.c===cap.id).forEach(q => {
       const ln = LENS.find(lns=>lns.id===q.l);
       const cur = p.responses[q.id]||null;
       const opts = q.opts[lang];
       const div = document.createElement('div');
       div.className = 'q-block';
-      let optsHtml = opts.map(o => <button class="opt${cur===o?' selected':''}" onclick="pick('${q.id}','${o.replace(/'/g,"\\'")}',this)" data-val="${o}">${o}</button>).join('');
-      optsHtml += <button class="opt unable${cur==='unable'?' selected':''}" onclick="pick('${q.id}','unable',this)" data-val="unable">${t('unable')}</button>;
-      div.innerHTML = <span class="lens-tag" style="background:${ln.bg};color:${ln.color};">${l(ln.name)}</span>
+      let optsHtml = opts.map(o => `<button class="opt${cur===o?' selected':''}" onclick="pick('${q.id}','${o.replace(/'/g,"\\'")}',this)" data-val="${o}">${o}</button>`).join('');
+      optsHtml += `<button class="opt unable${cur==='unable'?' selected':''}" onclick="pick('${q.id}','unable',this)" data-val="unable">${t('unable')}</button>`;
+      div.innerHTML = `<span class="lens-tag" style="background:${ln.bg};color:${ln.color};">${l(ln.name)}</span>
         <div class="q-text">${l(q.text)}</div>
         <div class="q-desc">${l(q.desc)}</div>
-        <div class="opts-row" id="or_${q.id}">${optsHtml}</div>;
+        <div class="opts-row" id="or_${q.id}">${optsHtml}</div>`;
       sec.appendChild(div);
     });
     body.appendChild(sec);
   });
   const rs = document.createElement('div');
-  rs.innerHTML = <div class="cap-header" style="background:var(--surface);">${t('reflections')}</div>;
+  rs.innerHTML = `<div class="cap-header" style="background:var(--surface);">${t('reflections')}</div>`;
   OQS.forEach(oq => {
     const div = document.createElement('div');
     div.className = 'r-block';
     const cur = p.open[oq.id]||'';
     if (oq.type==='rating') {
-      div.innerHTML = <div class="r-label">${l(oq.text)}</div>
+      div.innerHTML = `<div class="r-label">${l(oq.text)}</div>
         <div class="rating-row">
           <span style="font-size:12px;color:var(--text-faint)">1</span>
           <input type="range" min="1" max="5" step="1" value="${cur||3}" oninput="saveOpen('${oq.id}',this.value);document.getElementById('rv_${oq.id}').textContent=this.value;">
           <span style="font-size:12px;color:var(--text-faint)">5</span>
           <span class="rating-val" id="rv_${oq.id}">${cur||3}</span>
-        </div>;
+        </div>`;
     } else if (oq.type==='select') {
       const opts = oq.opts[lang];
-      const oph = opts.map(o=><button class="opt${cur===o?' selected':''}" onclick="selectOpen('${oq.id}','${o.replace(/'/g,"\\'")}',this)">${o}</button>).join('');
-      div.innerHTML = <div class="r-label">${l(oq.text)}</div><div class="opts-row" style="margin-top:10px;" id="oo_${oq.id}">${oph}</div>;
+      const oph = opts.map(o=>`<button class="opt${cur===o?' selected':''}" onclick="selectOpen('${oq.id}','${o.replace(/'/g,"\\'")}',this)">${o}</button>`).join('');
+      div.innerHTML = `<div class="r-label">${l(oq.text)}</div><div class="opts-row" style="margin-top:10px;" id="oo_${oq.id}">${oph}</div>`;
     } else {
-      div.innerHTML = <div class="r-label">${l(oq.text)}</div><textarea placeholder="${lang==='de'?'Ihre Antwort...':'Your response...'}" oninput="saveOpen('${oq.id}',this.value)">${cur}</textarea>;
+      div.innerHTML = `<div class="r-label">${l(oq.text)}</div><textarea placeholder="${lang==='de'?'Ihre Antwort...':'Your response...'}" oninput="saveOpen('${oq.id}',this.value)">${cur}</textarea>`;
     }
     rs.appendChild(div);
   });
@@ -864,10 +864,10 @@ function renderResults() {
 function renderGlobalAggregate(body) {
   if (!allOrgsAllDone()) {
     const doneOrgs = state.orgs.filter(orgAllDone).length;
-    body.innerHTML = <div class="locked-box"><div class="locked-icon">🔒</div>
+    body.innerHTML = `<div class="locked-box"><div class="locked-icon">🔒</div>
       <h3>${t('aggregateLocked')}</h3>
       <p>${t('aggregateLockedMsg')}<br><br>${doneOrgs} ${t('of')} ${state.orgs.length} ${lang==='de'?'Organisationen vollständig':'organizations complete'}.
-      ${state.orgs.length===0?'<br>'+t('addRespondentsFirst'):''}</p></div>;
+      ${state.orgs.length===0?'<br>'+t('addRespondentsFirst'):''}</p></div>`;
     return;
   }
   renderRadarAndTable(body, state.orgs.flatMap(o=>o.profiles), lang==='de'?'Globales Aggregat — alle Organisationen':'Global Aggregate — all organizations');
@@ -876,9 +876,9 @@ function renderGlobalAggregate(body) {
 function renderOrgAggregate(body, org) {
   if (!orgAllDone(org)) {
     const done = org.profiles.filter(isComplete).length;
-    body.innerHTML = <div class="locked-box"><div class="locked-icon">🔒</div>
+    body.innerHTML = `<div class="locked-box"><div class="locked-icon">🔒</div>
       <h3>${t('aggregateLocked')}</h3>
-      <p>${t('aggregateLockedMsg')}<br><br>${done} ${t('of')} ${org.profiles.length} ${t('profilesComplete')}.</p></div>;
+      <p>${t('aggregateLockedMsg')}<br><br>${done} ${t('of')} ${org.profiles.length} ${t('profilesComplete')}.</p></div>`;
     return;
   }
   renderRadarAndTable(body, org.profiles, org.name);
@@ -899,43 +899,43 @@ function renderRadarAndTable(body, profiles, title) {
   body.appendChild(hdr);
   const mg = document.createElement('div'); mg.className = 'metric-grid';
   capData.forEach(d => {
-    mg.innerHTML += <div class="metric-card"><div class="metric-cap">${l(d.cap.short)}</div>
-      <div class="metric-score" style="color:${d.cap.color}">${d.overall.toFixed(1)}<span class="metric-denom">/5</span></div></div>;
+    mg.innerHTML += `<div class="metric-card"><div class="metric-cap">${l(d.cap.short)}</div>
+      <div class="metric-score" style="color:${d.cap.color}">${d.overall.toFixed(1)}<span class="metric-denom">/5</span></div></div>`;
   });
   body.appendChild(mg);
   const chartId1 = 'ra-cap-'+Date.now();
   const chartId2 = 'ra-lens-'+(Date.now()+1);
   const cg = document.createElement('div'); cg.className = 'chart-grid';
-  cg.innerHTML = <div class="chart-card"><div class="chart-title">${t('capOverall')}</div><div class="chart-wrap"><canvas id="${chartId1}"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">${t('lensOverall')}</div><div class="chart-wrap"><canvas id="${chartId2}"></canvas></div></div>;
+  cg.innerHTML = `<div class="chart-card"><div class="chart-title">${t('capOverall')}</div><div class="chart-wrap"><canvas id="${chartId1}"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">${t('lensOverall')}</div><div class="chart-wrap"><canvas id="${chartId2}"></canvas></div></div>`;
   body.appendChild(cg);
   const st = document.createElement('div');
-  st.innerHTML = <p class="section-title">${t('breakdownTitle')}</p>
+  st.innerHTML = `<p class="section-title">${t('breakdownTitle')}</p>
     <table class="score-table"><thead><tr>
       <th>${lang==='de'?'Fähigkeit':'Capability'}</th>
-      ${LENS.map(ln=><th>${ln.name[lang]}</th>).join('')}
+      ${LENS.map(ln=>`<th>${ln.name[lang]}</th>`).join('')}
       <th>${t('overall')}</th>
-    </tr></thead><tbody>${capData.map(d=><tr>
+    </tr></thead><tbody>${capData.map(d=>`<tr>
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.cap.color};margin-right:6px;vertical-align:middle;"></span>${l(d.cap.short)}</td>
-      ${LENS.map(ln=><td>${d.ls[ln.id]?d.ls[ln.id].toFixed(1):'—'}<span class="mini-bar"><span class="mini-fill" style="display:block;width:${((d.ls[ln.id]||0)/5*100).toFixed(0)}%;background:${ln.color};height:100%;border-radius:3px;"></span></span></td>).join('')}
+      ${LENS.map(ln=>`<td>${d.ls[ln.id]?d.ls[ln.id].toFixed(1):'—'}<span class="mini-bar"><span class="mini-fill" style="display:block;width:${((d.ls[ln.id]||0)/5*100).toFixed(0)}%;background:${ln.color};height:100%;border-radius:3px;"></span></span></td>`).join('')}
       <td style="font-weight:700">${d.overall.toFixed(1)}</td>
-    </tr>).join('')}</tbody></table>;
+    </tr>`).join('')}</tbody></table>`;
   body.appendChild(st);
   if (profiles.length > 1) {
     const rc = document.createElement('div');
-    rc.innerHTML = <p class="section-title">${t('respondentComp')}</p>;
+    rc.innerHTML = `<p class="section-title">${t('respondentComp')}</p>`;
     CAP.forEach(cap => {
       const blk = document.createElement('div'); blk.className = 'comp-block';
-      let rows = <div class="comp-cap-title">${l(cap.name)}</div>;
+      let rows = `<div class="comp-cap-title">${l(cap.name)}</div>`;
       profiles.forEach((p,i) => {
         const sc = capScore(p.responses, cap.id); const pl = pal(i);
         const org = findOrgOfProfile(p.id);
-        rows += <div class="comp-row">
+        rows += `<div class="comp-row">
           <div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};width:22px;height:22px;font-size:9px;flex-shrink:0;">${ini(p.name)}</div>
-          <div class="comp-name">${p.name}${org? <span style="font-size:10px;color:var(--text-faint)">(${org.name})</span>:''}</div>
+          <div class="comp-name">${p.name}${org?` <span style="font-size:10px;color:var(--text-faint)">(${org.name})</span>`:''}</div>
           <div class="comp-bar-track"><div class="comp-bar-fill" style="width:${sc?(sc/5*100).toFixed(0):0}%;background:${cap.color};"></div></div>
           <div class="comp-val">${sc?sc.toFixed(1):'—'}</div>
-        </div>;
+        </div>`;
       });
       blk.innerHTML = rows; rc.appendChild(blk);
     });
@@ -971,37 +971,37 @@ function renderProfile(body, p) {
   });
   const hdr = document.createElement('div');
   hdr.style = 'display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;';
-  hdr.innerHTML = <div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};width:44px;height:44px;">${ini(p.name)}</div>
+  hdr.innerHTML = `<div class="profile-avatar" style="background:${pl.bg};color:${pl.fg};width:44px;height:44px;">${ini(p.name)}</div>
     <div><div style="font-size:16px;font-weight:700;">${p.name}</div>
     <div style="font-size:12px;color:var(--text-muted);">${p.role||t('noRoleSpec')}${org?' · '+org.name:''}</div></div>
     <div style="margin-left:auto;display:flex;gap:8px;">
       <button class="btn btn-sm" onclick="openSurvey('${p.id}')">${t('editResponses')}</button>
       <button class="btn btn-sm btn-danger" onclick="deleteProfile('${p.id}')">${t('remove')}</button>
-    </div>;
+    </div>`;
   body.appendChild(hdr);
   const mg = document.createElement('div'); mg.className = 'metric-grid';
   capData.forEach(d => {
-    mg.innerHTML += <div class="metric-card"><div class="metric-cap">${l(d.cap.short)}</div>
-      <div class="metric-score" style="color:${d.cap.color}">${d.overall!==null?d.overall.toFixed(1):'—'}<span class="metric-denom">/5</span></div></div>;
+    mg.innerHTML += `<div class="metric-card"><div class="metric-cap">${l(d.cap.short)}</div>
+      <div class="metric-score" style="color:${d.cap.color}">${d.overall!==null?d.overall.toFixed(1):'—'}<span class="metric-denom">/5</span></div></div>`;
   });
   body.appendChild(mg);
   const chartId = 'ra-prof-'+p.id+'-'+Date.now();
   const rc = document.createElement('div');
   rc.className = 'chart-card';
   rc.style = 'max-width:460px;margin:0 auto 1.5rem;';
-  rc.innerHTML = <div class="chart-title">${p.name}</div><div class="chart-wrap"><canvas id="${chartId}"></canvas></div>;
+  rc.innerHTML = `<div class="chart-title">${p.name}</div><div class="chart-wrap"><canvas id="${chartId}"></canvas></div>`;
   body.appendChild(rc);
   const st = document.createElement('div');
-  st.innerHTML = <p class="section-title">${t('breakdownTitle')}</p>
+  st.innerHTML = `<p class="section-title">${t('breakdownTitle')}</p>
     <table class="score-table"><thead><tr>
       <th>${lang==='de'?'Fähigkeit':'Capability'}</th>
-      ${LENS.map(ln=><th>${l(ln.name)}</th>).join('')}
+      ${LENS.map(ln=>`<th>${l(ln.name)}</th>`).join('')}
       <th>${t('overall')}</th>
-    </tr></thead><tbody>${capData.map(d=><tr>
+    </tr></thead><tbody>${capData.map(d=>`<tr>
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.cap.color};margin-right:6px;vertical-align:middle;"></span>${l(d.cap.short)}</td>
-      ${LENS.map(ln=><td>${d.ls[ln.id]!==null?d.ls[ln.id].toFixed(1):'—'}</td>).join('')}
+      ${LENS.map(ln=>`<td>${d.ls[ln.id]!==null?d.ls[ln.id].toFixed(1):'—'}</td>`).join('')}
       <td style="font-weight:700">${d.overall!==null?d.overall.toFixed(1):'—'}</td>
-    </tr>).join('')}</tbody></table>;
+    </tr>`).join('')}</tbody></table>`;
   body.appendChild(st);
   setTimeout(() => {
     const dark = matchMedia('(prefers-color-scheme: dark)').matches;
