@@ -592,8 +592,8 @@ const ADMIN_PASS = 'Copenhagen1!';
 const GUEST_USER = 'guest';
 const GUEST_PASS = 'guest123';
 
-const API_URL = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/data.json';
-const TOKEN = 'YOUR_GITHUB_TOKEN';
+const API_URL = 'https://api.github.com/repos/lukashopf-stack/AI-Maturity-Assessment/contents/data.json';
+const TOKEN = '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';
 
 const T = {
   respondents: { de:'Befragte', en:'Respondents' },
