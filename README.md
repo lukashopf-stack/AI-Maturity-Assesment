@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
@@ -228,11 +229,85 @@ footer{text-align:center;padding:2rem;font-size:11px;color:var(--text-faint);bor
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--slate-300);border-radius:3px}
+
+.login-screen{
+  position:fixed;
+  inset:0;
+  background:rgba(248,250,252,.96);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:1rem;
+}
+@media(prefers-color-scheme:dark){
+  .login-screen{
+    background:rgba(15,23,42,.96);
+  }
+}
+.login-card{
+  width:100%;
+  max-width:420px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  box-shadow:0 20px 40px rgba(15,23,42,.15);
+  padding:2rem;
+}
+.login-card h2{
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:.5rem;
+  letter-spacing:-.3px;
+}
+.login-card p{
+  font-size:13px;
+  color:var(--text-muted);
+  margin-bottom:1.5rem;
+  line-height:1.6;
+}
+.login-error{
+  display:none;
+  margin-top:.85rem;
+  font-size:12px;
+  color:var(--red-600);
+}
+.login-error.show{
+  display:block;
+}
+.hidden-app{
+  display:none;
+}
 </style>
 </head>
 <body>
 
-<div class="app">
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <h2>Anmeldung</h2>
+    <p>Bitte melden Sie sich an, um auf die KI-Bereitschaftsbewertung zuzugreifen.</p>
+
+    <div class="form-group">
+      <label for="login-user">Benutzername</label>
+      <input type="text" id="login-user" autocomplete="username" />
+    </div>
+
+    <div class="form-group">
+      <label for="login-pass">Passwort</label>
+      <input type="password" id="login-pass" autocomplete="current-password" />
+    </div>
+
+    <div class="modal-actions" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" onclick="handleLogin()">Login</button>
+    </div>
+
+    <div id="login-error" class="login-error">
+      Benutzername oder Passwort ist falsch.
+    </div>
+  </div>
+</div>
+
+<div class="app hidden-app" id="app-root">
 
 <div id="screen-home" class="screen active">
   <nav class="topnav">
@@ -348,6 +423,71 @@ footer{text-align:center;padding:2rem;font-size:11px;color:var(--text-faint);bor
 
 <script>
 let lang = 'de';
+
+const AUTH_USER = 'AnjaLukas';
+const AUTH_PASS = 'Copenhagen1!';
+
+function removeVisibleDoctype() {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+  const textNodes = [];
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
+  }
+  textNodes.forEach(node => {
+    if (node.nodeValue && node.nodeValue.includes('<!DOCTYPE html>')) {
+      node.nodeValue = node.nodeValue.replace('<!DOCTYPE html>', '').trim();
+    }
+  });
+}
+
+function unlockApp() {
+  const login = document.getElementById('login-screen');
+  const app = document.getElementById('app-root');
+  if (login) login.style.display = 'none';
+  if (app) app.classList.remove('hidden-app');
+  removeVisibleDoctype();
+}
+
+function handleLogin() {
+  const user = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  const error = document.getElementById('login-error');
+
+  if (user === AUTH_USER && pass === AUTH_PASS) {
+    sessionStorage.setItem('arcmm_auth', '1');
+    if (error) error.classList.remove('show');
+    unlockApp();
+  } else {
+    if (error) error.classList.add('show');
+  }
+}
+
+function initAuth() {
+  removeVisibleDoctype();
+
+  if (sessionStorage.getItem('arcmm_auth') === '1') {
+    unlockApp();
+  } else {
+    const loginUser = document.getElementById('login-user');
+    const loginPass = document.getElementById('login-pass');
+
+    if (loginUser) {
+      setTimeout(() => loginUser.focus(), 50);
+    }
+
+    if (loginUser) {
+      loginUser.addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleLogin();
+      });
+    }
+
+    if (loginPass) {
+      loginPass.addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleLogin();
+      });
+    }
+  }
+}
 
 const T = {
   orgSection: { de:'Organisationen', en:'Organizations' },
@@ -896,7 +1036,9 @@ function resetAll() {
   goHome();
 }
 
-load(); renderHome();
+load();
+renderHome();
+initAuth();
 </script>
 </body>
 </html>
